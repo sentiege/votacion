@@ -3,118 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administración - Sistema de Votación ECP UNA</title>
+  <title>Admin · ECP UNA Votación</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body class="admin-body">
 
   <header class="admin-header">
-    <h1>⚙️ Panel de Administración · Votación ECP UNA</h1>
-    <a href="../index.html" class="back-link">← Inicio</a>
+    <h1>🗳️ Panel de Administración · ECP UNA</h1>
+    <a href="../index.html" class="back-link">← Volver al inicio</a>
   </header>
 
-  <nav class="admin-nav" id="adminNav">
-    <a href="#" class="active" onclick="showSection('padron', this)">📋 PADRÓN</a>
-    <a href="#" onclick="showSection('candidatos', this)">👤 CANDIDATOS</a>
-    <a href="#" onclick="showSection('conteo', this)">📊 CONTEO DE VOTOS</a>
+  <nav class="admin-nav">
+    <a href="#" class="active" onclick="showSection('padron', this)">📋 Padrón</a>
+    <a href="#" onclick="showSection('candidatos', this)">👥 Candidatos</a>
+    <a href="#" onclick="showSection('conteo', this)">📊 Conteo</a>
   </nav>
 
   <main class="admin-content">
 
-    <!-- ===== PADRÓN ===== -->
+    <!-- PADRÓN -->
     <section id="padron" class="admin-section">
       <div class="section-card">
         <h2>📋 Gestión del Padrón Electoral</h2>
         <div class="form-row">
           <div class="form-group">
-            <label>Cédula de Identidad (CI)</label>
-            <input type="text" id="inputCI" placeholder="Ej: 5123456" maxlength="10" />
+            <label>Cédula de Identidad</label>
+            <input type="text" id="inputCI" placeholder="Ej: 4567890" maxlength="10">
           </div>
-          <div class="form-group" style="max-width:160px">
+          <div class="form-group">
             <label>Estado</label>
             <select id="inputHabilitado">
-              <option value="true">✅ Habilitado</option>
-              <option value="false">❌ Inhabilitado</option>
+              <option value="true">Habilitado</option>
+              <option value="false">Inhabilitado</option>
             </select>
           </div>
-          <div class="form-group" style="max-width:140px; display:flex; align-items:flex-end;">
-            <button class="btn btn-primary" style="width:100%" onclick="agregarElector()">+ Agregar</button>
+          <div class="form-group" style="display:flex;align-items:flex-end;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="agregarElector()">➕ Agregar</button>
+            <button class="btn btn-outline" onclick="importarPadron()">📂 CSV</button>
+            <button class="btn btn-danger" onclick="resetearEleccion()">🔄 Resetear</button>
           </div>
         </div>
-        <div style="margin-bottom:1rem; display:flex; gap:0.7rem; flex-wrap:wrap;">
-          <button class="btn btn-outline" onclick="importarPadron()">📂 Importar CSV</button>
-          <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="procesarCSV(event)">
-          <button class="btn btn-warning" onclick="resetearEleccion()">🔄 Resetear Elección</button>
-        </div>
+        <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="procesarCSV(event)">
         <div id="padronMsg"></div>
-        <div class="table-wrapper">
-          <table id="padronTable">
-            <thead><tr><th>#</th><th>Cédula de Identidad</th><th>Estado</th><th>¿Votó?</th><th>Acciones</th></tr></thead>
-            <tbody id="padronTbody"></tbody>
-          </table>
+        <div class="table-wrapper" style="margin-top:1rem;">
+          <table><thead><tr><th>#</th><th>CI</th><th>Estado</th><th>Voto</th><th>Acciones</th></tr></thead>
+          <tbody id="padronTbody"><tr><td colspan="5" style="text-align:center;color:#999;">Cargando...</td></tr></tbody></table>
         </div>
       </div>
     </section>
 
-    <!-- ===== CANDIDATOS ===== -->
-    <section id="candidatos" class="admin-section" style="display:none">
+    <!-- CANDIDATOS -->
+    <section id="candidatos" class="admin-section" style="display:none;">
       <div class="section-card">
-        <h2>👤 Registro de Candidatos</h2>
+        <h2>👥 Candidatos</h2>
         <div class="form-row">
+          <div class="form-group"><label>Nombre completo</label><input type="text" id="candNombre" placeholder="Nombre del candidato"></div>
+          <div class="form-group"><label>Lista / Partido</label><input type="text" id="candPartido" placeholder="Ej: Lista 1 · Partido Colorado"></div>
           <div class="form-group">
-            <label>Nombre completo</label>
-            <input type="text" id="candNombre" placeholder="Ej: Juan Pérez" />
+            <label>Foto</label>
+            <input type="file" id="candFoto" accept="image/*" onchange="previewFoto(event)">
+            <img id="fotoPreview" style="display:none;width:60px;height:60px;border-radius:50%;object-fit:cover;margin-top:0.4rem;">
           </div>
-          <div class="form-group">
-            <label>Lista / Partido (opcional)</label>
-            <input type="text" id="candPartido" placeholder="Ej: Lista 1 - Movimiento Estudiantil" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Foto del candidato (opcional)</label>
-            <input type="file" id="candFoto" accept="image/*" onchange="previewFoto(event)" />
-          </div>
-          <div class="form-group" style="display:flex; align-items:center; gap:1rem;">
-            <img id="fotoPreview" src="" alt="" style="display:none; width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);" />
-            <button class="btn btn-primary" onclick="agregarCandidato()">+ Agregar Candidato</button>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary" onclick="agregarCandidato()">➕ Agregar candidato</button>
           </div>
         </div>
         <div id="candidatosMsg"></div>
-      </div>
-      <div class="section-card">
-        <h2>Lista de Candidatos</h2>
         <div class="candidates-grid" id="candidatosGrid"></div>
       </div>
     </section>
 
-    <!-- ===== CONTEO ===== -->
-    <section id="conteo" class="admin-section" style="display:none">
-      <div id="winner-area"></div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Electores en padrón</div></div>
-        <div class="stat-box green"><div class="stat-number" id="statVotaron">0</div><div class="stat-label">Votos emitidos</div></div>
-        <div class="stat-box red"><div class="stat-number" id="statAbstenciones">0</div><div class="stat-label">Abstenciones</div></div>
-        <div class="stat-box gold"><div class="stat-number" id="statParticipacion">0%</div><div class="stat-label">Participación</div></div>
-      </div>
+    <!-- CONTEO -->
+    <section id="conteo" class="admin-section" style="display:none;">
       <div class="section-card">
-        <h2>📊 Resultados por Candidato</h2>
+        <h2>📊 Resultados en Tiempo Real <span style="font-size:0.75rem;color:#00b894;font-weight:500;">● LIVE</span></h2>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-number" id="statTotal">—</div><div class="stat-label">Padrón habilitado</div></div>
+          <div class="stat-box red"><div class="stat-number" id="statVotaron">—</div><div class="stat-label">Votos emitidos</div></div>
+          <div class="stat-box green"><div class="stat-number" id="statAbstenciones">—</div><div class="stat-label">Abstenciones</div></div>
+          <div class="stat-box gold"><div class="stat-number" id="statParticipacion">—</div><div class="stat-label">Participación</div></div>
+        </div>
+        <div id="winner-area"></div>
         <div id="resultadosBarras"></div>
-      </div>
-      <div class="section-card no-print">
-        <h2>🖨️ Acta de Votación</h2>
-        <p style="font-size:0.9rem; color:#636e72; margin-bottom:1rem;">Registro detallado de todas las cédulas que participaron y su voto.</p>
-        <button class="btn btn-success" onclick="imprimirResultados()">🖨️ Imprimir Resultados</button>
-        <button class="btn btn-outline" style="margin-left:0.5rem" onclick="exportarCSV()">💾 Exportar CSV</button>
-      </div>
-      <div class="section-card" id="print-area" style="display:none">
-        <div id="actaContent"></div>
+        <div style="display:flex;gap:1rem;margin-top:1.5rem;" class="no-print">
+          <button class="btn btn-primary" onclick="imprimirResultados()">🖨️ Imprimir acta</button>
+          <button class="btn btn-success" onclick="exportarCSV()">📥 Exportar CSV</button>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <script src="../js/data.js"></script>
-  <script src="admin.js"></script>
+  <!-- Área de impresión -->
+  <div id="print-area" style="display:none;">
+    <div id="actaContent"></div>
+  </div>
+
+  <script type="module" src="../js/data.js"></script>
+  <script type="module" src="admin.js"></script>
 </body>
 </html>

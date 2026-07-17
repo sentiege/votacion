@@ -9,7 +9,7 @@
 </head>
 <body class="urna-body">
 
-  <!-- PANTALLAS CI / CONFIRMAR / GRACIAS: contenedor clásico centrado -->
+  <!-- Pantallas CI / Confirmar / Gracias -->
   <div class="urna-classic" id="urnaClassic">
     <div class="vm-screen">
       <div class="vm-header">
@@ -21,34 +21,22 @@
     </div>
   </div>
 
-  <!-- PANTALLA VOTAR: layout tipo boleta paraguaya -->
+  <!-- Pantalla Boleta Electrónica -->
   <div class="urna-boleta" id="urnaBoleta" style="display:none;">
-
-    <!-- Franja superior -->
     <div class="urna-topbar">
       <div class="urna-topbar-left">
         <span class="urna-logo-icon">🗳️</span>
         <div class="urna-topbar-info">
           <span class="urna-marca">ELECCIONES ECP · UNA</span>
-          <span class="urna-meta" id="urnaMeta">Delegados · Centro de Estudiantes</span>
+          <span class="urna-meta">Delegados · Centro de Estudiantes</span>
         </div>
       </div>
       <div class="urna-topbar-right">
         <span class="urna-ci-badge" id="urnaCiBadge">🪪 CI: —</span>
       </div>
     </div>
-
-    <!-- Barra de título -->
-    <div class="urna-titlebar">
-      <span>Candidatos a DELEGADO ESTUDIANTIL</span>
-    </div>
-
-    <!-- Grilla de candidatos -->
-    <div class="urna-main" id="urnaMain">
-      <!-- JS renderiza aquí -->
-    </div>
-
-    <!-- Barra inferior -->
+    <div class="urna-titlebar">Candidatos a DELEGADO ESTUDIANTIL</div>
+    <div class="urna-main" id="urnaMain"></div>
     <div class="urna-footer">
       <div class="urna-footer-left">
         <button class="urna-footer-btn" onclick="cancelarVotoBoleta()">✕ Cancelar</button>
@@ -60,10 +48,10 @@
         <button class="urna-footer-btn urna-btn-confirm" id="urnaConfirmBtn" disabled onclick="irAConfirmarBoleta()">✅ Confirmar</button>
       </div>
     </div>
-
   </div>
 
-  <script src="../js/data.js"></script>
-  <script src="maquina.js"></script>
+  <!-- Firebase v10 CDN (ESM) -->
+  <script type="module" src="../js/data.js"></script>
+  <script type="module" src="maquina.js"></script>
 </body>
 </html>

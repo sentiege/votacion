@@ -1,28 +1,25 @@
-// ===== MÁQUINA DE VOTACIÓN - ECP UNA =====
+// ===== MÁQUINA DE VOTACIÓN - ECP UNA (Firestore) =====
+import DB from '../js/data.js';
 
 let ciActual = '';
 let candidatoSeleccionado = null;
-let pantalla = 'ci'; // ci | votar | confirmar | gracias
+let pantalla = 'ci';
 
 const vmContent   = document.getElementById('vmContent');
 const urnaClassic = document.getElementById('urnaClassic');
 const urnaBoleta  = document.getElementById('urnaBoleta');
 
-// Paleta de colores de partidos (mismos de la imagen de referencia)
 const PARTY_COLORS = [
-  { bg: '#cc0000', text: '#fff', border: '#8a0000' },  // rojo
-  { bg: '#e07b00', text: '#fff', border: '#a05500' },  // naranja
-  { bg: '#f0c400', text: '#1a1a1a', border: '#b89000' }, // amarillo
-  { bg: '#0055aa', text: '#fff', border: '#003d80' },  // azul
-  { bg: '#1aaa44', text: '#fff', border: '#127a30' },  // verde
-  { bg: '#7b22c0', text: '#fff', border: '#561880' },  // violeta
-  { bg: '#16869e', text: '#fff', border: '#0d5e6e' },  // teal
-  { bg: '#2c3e50', text: '#fff', border: '#1a252f' },  // gris oscuro
+  { bg: '#cc0000', text: '#fff', border: '#8a0000' },
+  { bg: '#e07b00', text: '#fff', border: '#a05500' },
+  { bg: '#f0c400', text: '#1a1a1a', border: '#b89000' },
+  { bg: '#0055aa', text: '#fff', border: '#003d80' },
+  { bg: '#1aaa44', text: '#fff', border: '#127a30' },
+  { bg: '#7b22c0', text: '#fff', border: '#561880' },
+  { bg: '#16869e', text: '#fff', border: '#0d5e6e' },
+  { bg: '#2c3e50', text: '#fff', border: '#1a252f' },
 ];
-
-function getCardColor(index) {
-  return PARTY_COLORS[index % PARTY_COLORS.length];
-}
+function getCardColor(i) { return PARTY_COLORS[i % PARTY_COLORS.length]; }
 
 // ── Router ──
 function render() {
@@ -46,7 +43,7 @@ function renderCI() {
       <h3>🪪 Ingrese su Cédula de Identidad</h3>
       <p>Utilice el teclado numérico para ingresar su CI</p>
       <div class="ci-display">
-        <span class="ci-number" id="ciDisplay">${ciActual}${ciActual.length < 10 ? '<span class="ci-cursor">|</span>' : ''}</span>
+        <span class="ci-number">${ciActual}${ciActual.length < 10 ? '<span class="ci-cursor">|</span>' : ''}</span>
       </div>
       <div class="numpad">
         ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="num-btn" onclick="presionarNumero('${n}')">${n}</button>`).join('')}
@@ -55,58 +52,55 @@ function renderCI() {
         <button class="num-btn confirm" onclick="verificarCI()">✅ CONFIRMAR</button>
       </div>
       <div id="ciMsg"></div>
-    </div>
-  `;
+    </div>`;
 }
 
-function presionarNumero(n) {
-  if (ciActual.length >= 10) return;
-  ciActual += n; render();
-}
-function borrarDigito() {
-  ciActual = ciActual.slice(0, -1); render();
-}
-function verificarCI() {
-  if (ciActual.length < 5) {
-    mostrarMsg('ciMsg', '⚠️ CI demasiado corta.', 'warning'); return;
+function presionarNumero(n) { if (ciActual.length >= 10) return; ciActual += n; render(); }
+function borrarDigito()     { ciActual = ciActual.slice(0, -1); render(); }
+
+async function verificarCI() {
+  if (ciActual.length < 5) { mostrarMsg('ciMsg', '⚠️ CI demasiado corta.', 'warning'); return; }
+  mostrarMsg('ciMsg', '⏳ Verificando...', 'warning');
+  try {
+    const habilitado = await DB.isHabilitado(ciActual);
+    if (!habilitado) {
+      mostrarMsg('ciMsg', `❌ CI ${ciActual} no habilitada.`, 'error');
+      setTimeout(() => { ciActual = ''; render(); }, 2500); return;
+    }
+    const yaVoto = await DB.yaVoto(ciActual);
+    if (yaVoto) {
+      mostrarMsg('ciMsg', `⚠️ CI ${ciActual} ya emitió su voto.`, 'warning');
+      setTimeout(() => { ciActual = ''; render(); }, 2500); return;
+    }
+    pantalla = 'votar'; candidatoSeleccionado = null; render();
+  } catch (err) {
+    mostrarMsg('ciMsg', '❌ Error de conexión. Reintente.', 'error');
+    console.error(err);
   }
-  if (!DB.isHabilitado(ciActual)) {
-    mostrarMsg('ciMsg', `❌ CI ${ciActual} no habilitada.`, 'error');
-    setTimeout(() => { ciActual = ''; render(); }, 2500); return;
-  }
-  if (DB.yaVoto(ciActual)) {
-    mostrarMsg('ciMsg', `⚠️ CI ${ciActual} ya votó.`, 'warning');
-    setTimeout(() => { ciActual = ''; render(); }, 2500); return;
-  }
-  pantalla = 'votar'; candidatoSeleccionado = null; render();
 }
 
-// ── PANTALLA 2: BOLETA ELECTRÓNICA ──
-function renderVotar() {
-  const candidatos = DB.getCandidatos();
-
-  // Badge CI
+// ── PANTALLA 2: BOLETA ──
+async function renderVotar() {
+  const candidatos = await DB.getCandidatos();
   const ciBadge = document.getElementById('urnaCiBadge');
   if (ciBadge) ciBadge.textContent = `🪪 CI: ${ciActual}`;
-
   const urnaMain = document.getElementById('urnaMain');
   if (!urnaMain) return;
 
-  if (candidatos.length === 0) {
+  if (!candidatos.length) {
     urnaMain.innerHTML = '<p class="urna-empty">No hay candidatos registrados.</p>';
   } else {
-    // Tarjetas de candidatos
     const cards = candidatos.map((c, i) => {
       const col = getCardColor(i);
-      const selected = candidatoSeleccionado === c.id;
-      const fotoHtml = c.foto
+      const sel = candidatoSeleccionado === c.id;
+      const foto = c.foto
         ? `<img class="urna-card-foto" src="${c.foto}" alt="${c.nombre}">`
         : `<div class="urna-card-nofoto">👤</div>`;
       return `
-        <div class="urna-card${selected ? ' urna-card--selected' : ''}"
+        <div class="urna-card${sel ? ' urna-card--selected' : ''}"
              style="--card-bg:${col.bg};--card-text:${col.text};--card-border:${col.border};"
              onclick="seleccionarCandidatoBoleta(${c.id})">
-          ${selected ? '<div class="urna-card-check">✅</div>' : ''}
+          ${sel ? '<div class="urna-card-check">✅</div>' : ''}
           <div class="urna-card-header">
             <span class="urna-card-partido">${c.partido || 'Candidato'}</span>
             <span class="urna-card-lista">
@@ -114,60 +108,49 @@ function renderVotar() {
               <span class="urna-card-lista-num">${i + 1}</span>
             </span>
           </div>
-          <div class="urna-card-foto-wrap">${fotoHtml}</div>
+          <div class="urna-card-foto-wrap">${foto}</div>
           <div class="urna-card-nombre">${c.nombre}</div>
         </div>`;
     }).join('');
 
-    // Tarjeta voto en blanco
-    const blancoSelected = candidatoSeleccionado === 'blanco';
+    const blancoSel = candidatoSeleccionado === 'blanco';
     const blancoCard = `
-      <div class="urna-card urna-card--blanco${blancoSelected ? ' urna-card--selected' : ''}"
+      <div class="urna-card urna-card--blanco${blancoSel ? ' urna-card--selected' : ''}"
            onclick="seleccionarCandidatoBoleta('blanco')">
-        ${blancoSelected ? '<div class="urna-card-check">✅</div>' : ''}
+        ${blancoSel ? '<div class="urna-card-check">✅</div>' : ''}
         <div class="urna-card-blanco-inner">
           <span class="urna-card-blanco-icon">⬜</span>
           <span class="urna-card-blanco-label">Voto en Blanco</span>
         </div>
       </div>`;
-
     urnaMain.innerHTML = cards + blancoCard;
   }
 
-  // Footer
-  const confirmBtn = document.getElementById('urnaConfirmBtn');
-  const selMsg     = document.getElementById('urnaSelMsg');
-  if (confirmBtn) confirmBtn.disabled = !candidatoSeleccionado;
-  if (selMsg) {
-    selMsg.textContent = candidatoSeleccionado
-      ? (candidatoSeleccionado === 'blanco' ? '⬜ Voto en blanco seleccionado' : '✔ Candidato seleccionado')
-      : 'Seleccione un candidato para continuar';
-  }
+  const btn = document.getElementById('urnaConfirmBtn');
+  const msg = document.getElementById('urnaSelMsg');
+  if (btn) btn.disabled = !candidatoSeleccionado;
+  if (msg) msg.textContent = candidatoSeleccionado
+    ? (candidatoSeleccionado === 'blanco' ? '⬜ Voto en blanco seleccionado' : '✔ Candidato seleccionado')
+    : 'Seleccione un candidato para continuar';
 }
 
-function seleccionarCandidatoBoleta(id) {
-  candidatoSeleccionado = id; renderVotar();
-}
-function irAConfirmarBoleta() {
-  if (!candidatoSeleccionado) return;
-  pantalla = 'confirmar'; render();
-}
-function cancelarVotoBoleta() {
-  ciActual = ''; candidatoSeleccionado = null; pantalla = 'ci'; render();
-}
+function seleccionarCandidatoBoleta(id) { candidatoSeleccionado = id; renderVotar(); }
+async function irAConfirmarBoleta()     { if (!candidatoSeleccionado) return; pantalla = 'confirmar'; render(); }
+function cancelarVotoBoleta()           { ciActual = ''; candidatoSeleccionado = null; pantalla = 'ci'; render(); }
 
-// Aliases compatibilidad
+// Aliases
 function seleccionarCandidato(id) { seleccionarCandidatoBoleta(id); }
 function irAConfirmar()           { irAConfirmarBoleta(); }
 function cancelarVoto()           { cancelarVotoBoleta(); }
 function votarBlanco()            { candidatoSeleccionado = 'blanco'; pantalla = 'confirmar'; render(); }
 
 // ── PANTALLA 3: CONFIRMAR ──
-function renderConfirmar() {
+async function renderConfirmar() {
   let info = { nombre: 'VOTO EN BLANCO', partido: '' };
   let fotoHtml = '<div class="vm-no-photo" style="width:80px;height:80px;margin:0 auto 1rem;">⬜</div>';
   if (candidatoSeleccionado !== 'blanco') {
-    const c = DB.getCandidatos().find(x => x.id === candidatoSeleccionado);
+    const cands = await DB.getCandidatos();
+    const c = cands.find(x => x.id === candidatoSeleccionado);
     if (c) {
       info = c;
       fotoHtml = c.foto
@@ -190,19 +173,24 @@ function renderConfirmar() {
 
 function volverAVotar() { pantalla = 'votar'; render(); }
 
-function emitirVoto() {
-  DB.registrarVoto(ciActual, candidatoSeleccionado);
-  const padron = DB.getPadron();
-  const e = padron.find(x => x.ci === ciActual);
-  if (e) { e.yaVoto = true; DB.savePadron(padron); }
-  pantalla = 'gracias'; render();
-  let seg = 8;
-  const iv = setInterval(() => {
-    seg--;
-    const el = document.getElementById('countdownSeg');
-    if (el) el.textContent = seg;
-    if (seg <= 0) { clearInterval(iv); ciActual = ''; candidatoSeleccionado = null; pantalla = 'ci'; render(); }
-  }, 1000);
+async function emitirVoto() {
+  const btn = document.querySelector('.vm-btn-confirm');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  try {
+    await DB.registrarVoto(ciActual, candidatoSeleccionado);
+    pantalla = 'gracias'; render();
+    let seg = 8;
+    const iv = setInterval(() => {
+      seg--;
+      const el = document.getElementById('countdownSeg');
+      if (el) el.textContent = seg;
+      if (seg <= 0) { clearInterval(iv); ciActual = ''; candidatoSeleccionado = null; pantalla = 'ci'; render(); }
+    }, 1000);
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ EMITIR VOTO'; }
+    alert('Error al guardar el voto. Verifique la conexión.');
+    console.error(err);
+  }
 }
 
 // ── PANTALLA 4: GRACIAS ──
