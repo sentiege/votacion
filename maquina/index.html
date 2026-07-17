@@ -5,20 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Máquina de Votación · ECP UNA</title>
   <link rel="stylesheet" href="../css/style.css">
-  <meta name="theme-color" content="#0f0f1a">
+  <meta name="theme-color" content="#1a1a2e">
 </head>
-<body class="vm-body">
+<body class="urna-body">
 
-  <div class="vm-screen">
-    <div class="vm-header">
-      <div class="vm-logo">🗳️</div>
-      <h2>MÁQUINA DE VOTACIÓN</h2>
-      <p>Escuela de Ciencias Políticas · UNA</p>
+  <!-- PANTALLAS CI / CONFIRMAR / GRACIAS: contenedor clásico centrado -->
+  <div class="urna-classic" id="urnaClassic">
+    <div class="vm-screen">
+      <div class="vm-header">
+        <div class="vm-logo">🗳️</div>
+        <h2>MÁQUINA DE VOTACIÓN</h2>
+        <p>Escuela de Ciencias Políticas · UNA</p>
+      </div>
+      <div class="vm-body-inner" id="vmContent"></div>
+    </div>
+  </div>
+
+  <!-- PANTALLA VOTAR: layout tipo boleta paraguaya -->
+  <div class="urna-boleta" id="urnaBoleta" style="display:none;">
+
+    <!-- Franja superior -->
+    <div class="urna-topbar">
+      <div class="urna-topbar-left">
+        <span class="urna-logo-icon">🗳️</span>
+        <div class="urna-topbar-info">
+          <span class="urna-marca">ELECCIONES ECP · UNA</span>
+          <span class="urna-meta" id="urnaMeta">Delegados · Centro de Estudiantes</span>
+        </div>
+      </div>
+      <div class="urna-topbar-right">
+        <span class="urna-ci-badge" id="urnaCiBadge">🪪 CI: —</span>
+      </div>
     </div>
 
-    <div class="vm-body-inner" id="vmContent">
+    <!-- Barra de título -->
+    <div class="urna-titlebar">
+      <span>Candidatos a DELEGADO ESTUDIANTIL</span>
+    </div>
+
+    <!-- Grilla de candidatos -->
+    <div class="urna-main" id="urnaMain">
       <!-- JS renderiza aquí -->
     </div>
+
+    <!-- Barra inferior -->
+    <div class="urna-footer">
+      <div class="urna-footer-left">
+        <button class="urna-footer-btn" onclick="cancelarVotoBoleta()">✕ Cancelar</button>
+      </div>
+      <div class="urna-footer-center">
+        <span id="urnaSelMsg" class="urna-sel-msg">Seleccione un candidato para votar</span>
+      </div>
+      <div class="urna-footer-right">
+        <button class="urna-footer-btn urna-btn-confirm" id="urnaConfirmBtn" disabled onclick="irAConfirmarBoleta()">✅ Confirmar</button>
+      </div>
+    </div>
+
   </div>
 
   <script src="../js/data.js"></script>
